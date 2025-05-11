@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+python-jose
+passlib
+sqlalchemy
+pydantic_settings
+asyncpg
+pydantic[email]
+python-multipart

@@ -1,0 +1,31 @@
+services:
+  backend:
+    container_name: se104_backend
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "9000:8000"
+    networks:
+      - se104_network
+      
+  posgres:
+    container_name: se104_postgres
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: se104_db
+    ports:
+      - "5432:5432"
+    networks:
+      - se104_network
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+networks:
+  se104_network:
+    driver: bridge
+    
+volumes:
+  postgres_data:
