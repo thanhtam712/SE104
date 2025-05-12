@@ -8,4 +8,5 @@ export const Endpoints = {
     listUsers: `${process.env.NEXT_PUBLIC_API_URL}/api/user/`, // Added new endpoint for listing users
     updateUser: (userId: string) => `${process.env.NEXT_PUBLIC_API_URL}/api/user/${userId}`,
     deleteUser: (userId: string) => `${process.env.NEXT_PUBLIC_API_URL}/api/user/${userId}`,
+    getAdminStats: `${process.env.NEXT_PUBLIC_API_URL}/api/admin/analysis/stats`,
 };

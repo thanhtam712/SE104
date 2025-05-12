@@ -6,7 +6,8 @@ from api.router import (
     login_router,
     me_router,
     register_router,
-    manage_user_router
+    manage_user_router,
+    admin_router,
 )
 from bootstrap.db import init_db
 from fastapi import FastAPI
@@ -45,6 +46,9 @@ def create_app() -> FastAPI:
 
     app.include_router(list_users_router, prefix="/api/user", tags=["user"])
     app.include_router(manage_user_router, prefix="/api/user", tags=["user"])
+    app.include_router(
+        admin_router, prefix="/api/admin", tags=["admin"]
+    )  # Add this line
 
     @app.on_event("startup")
     async def on_startup():

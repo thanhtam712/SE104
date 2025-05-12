@@ -8,3 +8,4 @@ from api.router.conversation.fetch_conversation import router as fetch_conversat
 
 from api.router.user.list_user import router as list_users_router
 from api.router.user.manage_user import router as manage_user_router
+from api.router.admin import router as admin_router

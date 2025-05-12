@@ -103,3 +103,23 @@ export interface InConversationGETResponse {
     conversation_id: string;
     messages: Message[];
 }
+
+export interface RecentConversation {
+    id: string;
+    title: string;
+    created_at: string;
+    updated_at: string;
+    user_id: string;
+}
+
+export interface AdminStatsData {
+    num_users: number;
+    num_conversations: number;
+    recent_conversations: RecentConversation[];
+}
+
+export interface AdminApiResponse {
+    status: string;
+    message: string;
+    data: AdminStatsData;
+}

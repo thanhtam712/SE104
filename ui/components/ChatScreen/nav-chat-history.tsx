@@ -41,7 +41,7 @@ export function NavChatHistory({ items }: NavChatHistoryProps) {
         <SidebarGroup className="group-data-[collapsible=icon]:hidden">
             <SidebarMenu>
                 {items.map(({ name, url }) => (
-                    <SidebarMenuItem key={name} className="cursor-pointer">
+                    <SidebarMenuItem key={url} className="cursor-pointer">
                         <SidebarMenuButton onClick={() => handleNavigation(url)} className="cursor-pointer">
                             <span>{name}</span>
                         </SidebarMenuButton>

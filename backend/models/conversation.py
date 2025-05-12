@@ -19,5 +19,11 @@ class Conversation(Base):
     # Ensure messages are ordered by creation date for easy access to the first message
     messages = relationship("Message", back_populates="conversation", cascade="all, delete-orphan", order_by="Message.created_at")
 
+    @property
+    def title(self) -> str:
+        if self.messages:
+            return self.messages[0].content
+        return "Untitled Conversation"
+
     def __repr__(self):
         return f"<Conversation(id={self.id}, user_id={self.user_id})>"

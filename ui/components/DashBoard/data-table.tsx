@@ -52,6 +52,7 @@ import {
 import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
 import { toast } from "sonner"
 import { z } from "zod"
+import { RecentConversation } from "@/types"; // Import RecentConversation
 
 import { useIsMobile } from "@/hooks/use-mobile"
 import { Badge } from "@/components/ui/badge"
@@ -116,8 +117,19 @@ export const schema = z.object({
     reviewer: z.string(),
 })
 
+// Updated schema to reflect RecentConversation structure for the table
+export const recentConversationSchema = z.object({
+    id: z.string(),
+    title: z.string(),
+    created_at: z.string(),
+    updated_at: z.string(),
+    user_id: z.string(),
+});
+
+export type RecentConversationData = z.infer<typeof recentConversationSchema>;
+
 // Create a separate component for the drag handle
-function DragHandle({ id }: { id: number }) {
+function DragHandle({ id }: { id: string }) { // Changed id type to string
     const { attributes, listeners } = useSortable({
         id,
     })
@@ -140,7 +152,7 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
     {
         id: "drag",
         header: () => null,
-        cell: ({ row }) => <DragHandle id={row.original.id} />,
+        cell: ({ row }) => <DragHandle id={row.original.id.toString()} />,
     },
     {
         id: "select",
@@ -313,7 +325,90 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
     },
 ]
 
-function DraggableRow({ row }: { row: Row<z.infer<typeof schema>> }) {
+// Updated columns for RecentConversationData
+const recentConversationColumns: ColumnDef<RecentConversationData>[] = [
+    // Drag handle and select can be kept if reordering/selection is desired for this table too
+    // Or remove them if not applicable to recent conversations display
+    {
+        id: "drag",
+        header: () => null,
+        cell: ({ row }) => <DragHandle id={row.original.id} />,
+    },
+    {
+        id: "select",
+        header: ({ table }) => (
+            <div className="flex items-center justify-center">
+                <Checkbox
+                    checked={
+                        table.getIsAllPageRowsSelected() ||
+                        (table.getIsSomePageRowsSelected() && "indeterminate")
+                    }
+                    onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+                    aria-label="Select all"
+                />
+            </div>
+        ),
+        cell: ({ row }) => (
+            <div className="flex items-center justify-center">
+                <Checkbox
+                    checked={row.getIsSelected()}
+                    onCheckedChange={(value) => row.toggleSelected(!!value)}
+                    aria-label="Select row"
+                />
+            </div>
+        ),
+        enableSorting: false,
+        enableHiding: false,
+    },
+    {
+        accessorKey: "title",
+        header: "Title",
+        cell: ({ row }) => {
+            // Keeping TableCellViewer for consistency, but it might need adjustment
+            // if its internal schema/props are strictly based on the old schema.
+            // For now, we adapt the item prop passed to it.
+            return <TableCellViewer item={{ ...row.original, header: row.original.title, type: 'Conversation', status: 'Viewed', target: '', limit: '', reviewer: '' }} />
+        },
+        enableHiding: false,
+    },
+    {
+        accessorKey: "user_id",
+        header: "User ID",
+    },
+    {
+        accessorKey: "created_at",
+        header: "Created At",
+        cell: ({ row }) => new Date(row.original.created_at).toLocaleString(),
+    },
+    {
+        accessorKey: "updated_at",
+        header: "Updated At",
+        cell: ({ row }) => new Date(row.original.updated_at).toLocaleString(),
+    },
+    {
+        id: "actions",
+        cell: () => (
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button
+                        variant="ghost"
+                        className="flex size-8 text-muted-foreground data-[state=open]:bg-muted"
+                        size="icon"
+                    >
+                        <MoreVerticalIcon />
+                        <span className="sr-only">Open menu</span>
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-32">
+                    <DropdownMenuItem>View Details</DropdownMenuItem>
+                    {/* Add other relevant actions */}
+                </DropdownMenuContent>
+            </DropdownMenu>
+        ),
+    },
+];
+
+function DraggableRow({ row }: { row: Row<RecentConversationData> }) { // Use RecentConversationData
     const { transform, transition, setNodeRef, isDragging } = useSortable({
         id: row.original.id,
     })
@@ -340,8 +435,10 @@ function DraggableRow({ row }: { row: Row<z.infer<typeof schema>> }) {
 
 export function DataTable({
     data: initialData,
+    dataType = "default" // New prop to differentiate table types
 }: {
-    data: z.infer<typeof schema>[]
+    data: any[] // Allow any data type for flexibility
+    dataType?: "default" | "recentConversations"
 }) {
     const [data, setData] = React.useState(() => initialData)
     const [rowSelection, setRowSelection] = React.useState({})
@@ -353,7 +450,7 @@ export function DataTable({
     const [sorting, setSorting] = React.useState<SortingState>([])
     const [pagination, setPagination] = React.useState({
         pageIndex: 0,
-        pageSize: 10,
+        pageSize: 5, // Default to 5 for recent conversations, can be adjusted
     })
     const sortableId = React.useId()
     const sensors = useSensors(
@@ -362,8 +459,16 @@ export function DataTable({
         useSensor(KeyboardSensor, {})
     )
 
+    // Determine columns based on dataType
+    const columns = dataType === "recentConversations" ? recentConversationColumns : defaultColumns; // Assuming 'defaultColumns' is your original 'columns' array
+    // You'll need to rename your original 'columns' to 'defaultColumns' or handle this differently
+
+    React.useEffect(() => {
+        setData(initialData);
+    }, [initialData]);
+
     const dataIds = React.useMemo<UniqueIdentifier[]>(
-        () => data?.map(({ id }) => id) || [],
+        () => data?.map(({ id }) => id.toString()) || [], // Ensure id is string for dnd-kit
         [data]
     )
 
@@ -377,7 +482,7 @@ export function DataTable({
             columnFilters,
             pagination,
         },
-        getRowId: (row) => row.id.toString(),
+        getRowId: (row) => row.id.toString(), // Ensure id is string
         enableRowSelection: true,
         onRowSelectionChange: setRowSelection,
         onSortingChange: setSorting,
@@ -421,43 +526,16 @@ export function DataTable({
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value="outline">Outline</SelectItem>
-                        <SelectItem value="past-performance">Past Performance</SelectItem>
+                        {/* <SelectItem value="past-performance">Past Performance</SelectItem>
                         <SelectItem value="key-personnel">Key Personnel</SelectItem>
-                        <SelectItem value="focus-documents">Focus Documents</SelectItem>
+                        <SelectItem value="focus-documents">Focus Documents</SelectItem> */}
                     </SelectContent>
                 </Select>
-                <TabsList className="@4xl/main:flex hidden">
-                    <TabsTrigger value="outline">Outline</TabsTrigger>
-                    <TabsTrigger value="past-performance" className="gap-1">
-                        Past Performance{" "}
-                        <Badge
-                            variant="secondary"
-                            className="flex h-5 w-5 items-center justify-center rounded-full bg-muted-foreground/30"
-                        >
-                            3
-                        </Badge>
-                    </TabsTrigger>
-                    <TabsTrigger value="key-personnel" className="gap-1">
-                        Key Personnel{" "}
-                        <Badge
-                            variant="secondary"
-                            className="flex h-5 w-5 items-center justify-center rounded-full bg-muted-foreground/30"
-                        >
-                            2
-                        </Badge>
-                    </TabsTrigger>
-                    <TabsTrigger value="focus-documents">Focus Documents</TabsTrigger>
-                </TabsList>
+                {/* <TabsList className="@4xl/main:flex hidden"> */}
+                    {/* <TabsTrigger value="outline">Outline</TabsTrigger> */}
+                {/* </TabsList> */}
                 <div className="flex items-center gap-2">
                     <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="outline" size="sm">
-                                <ColumnsIcon />
-                                <span className="hidden lg:inline">Customize Columns</span>
-                                <span className="lg:hidden">Columns</span>
-                                <ChevronDownIcon />
-                            </Button>
-                        </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-56">
                             {table
                                 .getAllColumns()
@@ -482,10 +560,6 @@ export function DataTable({
                                 })}
                         </DropdownMenuContent>
                     </DropdownMenu>
-                    <Button variant="outline" size="sm">
-                        <PlusIcon />
-                        <span className="hidden lg:inline">Add Section</span>
-                    </Button>
                 </div>
             </div>
             <TabsContent
@@ -526,7 +600,7 @@ export function DataTable({
                                         strategy={verticalListSortingStrategy}
                                     >
                                         {table.getRowModel().rows.map((row) => (
-                                            <DraggableRow key={row.id} row={row} />
+                                            <DraggableRow key={row.id} row={row as Row<RecentConversationData>} /> // Cast row type
                                         ))}
                                     </SortableContext>
                                 ) : (
@@ -640,6 +714,16 @@ export function DataTable({
     )
 }
 
+// Placeholder for original columns, rename or define it properly
+const defaultColumns: ColumnDef<any>[] = [
+    // Define your original columns here, for example:
+    // This is just a placeholder, you need to replace it with your actual original columns definition
+    { accessorKey: "header", header: "Header" },
+    { accessorKey: "type", header: "Type" },
+    { accessorKey: "status", header: "Status" },
+    // ... other original columns
+];
+
 const chartData = [
     { month: "January", desktop: 186, mobile: 80 },
     { month: "February", desktop: 305, mobile: 200 },
@@ -660,7 +744,9 @@ const chartConfig = {
     },
 } satisfies ChartConfig
 
-function TableCellViewer({ item }: { item: z.infer<typeof schema> }) {
+// The TableCellViewer component might need to be more generic or you might need a different one for recent conversations
+// For now, it's adapted in the column definition for 'title'.
+function TableCellViewer({ item }: { item: any }) { // Made item prop more generic
     const isMobile = useIsMobile()
 
     return (
