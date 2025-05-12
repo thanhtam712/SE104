@@ -71,7 +71,7 @@ async def get_dashboard_stats(
     recent_conversations_list = [
         RecentConversationItem(
             id=str(conv.id),
-            title=conv.title,  # Add this line
+            title=conv.title,
             created_at=str(conv.created_at),
             updated_at=str(conv.updated_at),
             user_id=str(conv.user_id),

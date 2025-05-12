@@ -48,7 +48,7 @@ def create_app() -> FastAPI:
     app.include_router(manage_user_router, prefix="/api/user", tags=["user"])
     app.include_router(
         admin_router, prefix="/api/admin", tags=["admin"]
-    )  # Add this line
+    ) 
 
     @app.on_event("startup")
     async def on_startup():
@@ -58,7 +58,6 @@ def create_app() -> FastAPI:
     async def custom_http_exception_handler(
         request: Request, exc: FastAPIHTTPException
     ):
-        # Use your respond_http for consistent response
         return respond_http(
             status_code=exc.status_code, status="error", message=exc.detail, data=None
         )

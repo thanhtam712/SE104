@@ -52,7 +52,7 @@ async def update_user_info(
     if "password" in update_data and update_data["password"]:
         hashed_password = get_password_hash(update_data["password"])
         user_to_update.hashed_password = hashed_password
-        del update_data["password"]  # Avoid trying to set it directly
+        del update_data["password"] 
 
     for field, value in update_data.items():
         setattr(user_to_update, field, value)
@@ -62,7 +62,6 @@ async def update_user_info(
         await db.refresh(user_to_update)
     except Exception as e:
         await db.rollback()
-        # Log error e
         return respond_http(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             status="error",
@@ -120,7 +119,6 @@ async def delete_user_account(
         await db.commit()
     except Exception as e:
         await db.rollback()
-        # Log error e
         return respond_http(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             status="error",

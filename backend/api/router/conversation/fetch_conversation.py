@@ -42,8 +42,6 @@ async def fetch_conversation_messages(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    # Query for the conversation and eager load messages
-    # Ensure messages are ordered by creation date
     result = await db.execute(
         select(Conversation)
         .where(
@@ -59,11 +57,6 @@ async def fetch_conversation_messages(
             message_code="CONVERSATION_NOT_FOUND",
             message="Conversation not found or access denied.",
         )
-
-    # Messages are already ordered by created_at due to the relationship definition in Conversation model
-    # and loaded via selectinload.
-    # If not, you would sort them here or adjust the query.
-    # For example: sorted_messages = sorted(conversation.messages, key=lambda m: m.created_at)
 
     message_responses = [MessageResponse.from_orm(msg) for msg in conversation.messages]
 

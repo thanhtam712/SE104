@@ -21,7 +21,7 @@ class UserInDB(BaseModel):
     username: str
     hashed_password: str
     role: str
-    id: uuid.UUID  # Changed from int to uuid.UUID
+    id: uuid.UUID 
     disabled: bool = False
 
 
@@ -53,7 +53,7 @@ router = APIRouter()
 
 @router.post("/login", response_model=LoginResponse)
 async def login(
-    form_data: OAuth2PasswordRequestForm = Depends(),  # Changed: Use OAuth2PasswordRequestForm
+    form_data: OAuth2PasswordRequestForm = Depends(), 
     db: AsyncSession = Depends(get_db),
 ):
     print("Login attempt with username:", form_data.username)
@@ -63,7 +63,6 @@ async def login(
     result = await db.execute(stmt)
     user = result.scalars().first()
 
-    # Check if user exists and password is correct
     if not user or not verify_password(form_data.password, user.hashed_password):
         return respond_http(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -99,10 +98,9 @@ async def login(
     user_email = user.user_email
     username = user.username
 
-    # Create SQLAlchemy DBSession model instance for DB persistence
     db_session = Session(
         id=session_id,
-        user_id=user.id,  # user.id is UUID, matching DBSession.user_id type
+        user_id=user.id, 
         refresh_token=refresh_token,
         expires_in=refresh_token_expire_time,
         is_active=True,

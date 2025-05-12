@@ -36,7 +36,6 @@ async def read_users_me(current_user: User = Depends(get_current_user)):
     """
     Get information about the currently authenticated user.
     """
-    # return UserMeResponse.from_orm(current_user)
     return respond_http(
         status_code=status.HTTP_200_OK,
         status="success",

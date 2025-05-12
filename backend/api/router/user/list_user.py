@@ -37,13 +37,11 @@ async def list_users(
     db: AsyncSession = Depends(get_db),
     _: User = Depends(get_current_user),
 ):
-    # Count total users
     total_users_result = await db.execute(select(func.count()).select_from(User))
     total_users = total_users_result.scalar()
     total_pages = (total_users + page_size - 1) // page_size if total_users else 1
     offset = (page - 1) * page_size
 
-    # Fetch users for current page
     result = await db.execute(
         select(User).order_by(User.created_at.desc()).offset(offset).limit(page_size)
     )

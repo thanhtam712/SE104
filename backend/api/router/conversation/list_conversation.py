@@ -14,18 +14,24 @@ from sqlalchemy.orm import selectinload
 
 # Message model is implicitly used via the relationship in Conversation model with order_by
 
+
 class ConversationInfo(BaseModel):
     id: uuid.UUID
     created_at: datetime
     updated_at: datetime
-    title: Optional[str] = None # To store the first message content
+    title: Optional[str] = None
+
 
 class ListConversationsResponse(BaseModel):
     conversations: List[ConversationInfo]
 
+
 router = APIRouter()
 
-@router.get("/", response_model=ListConversationsResponse, status_code=status.HTTP_200_OK)
+
+@router.get(
+    "/", response_model=ListConversationsResponse, status_code=status.HTTP_200_OK
+)
 async def list_conversations(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -33,17 +39,17 @@ async def list_conversations(
     result = await db.execute(
         select(Conversation)
         .where(Conversation.user_id == current_user.id)
-        .options(selectinload(Conversation.messages)) # Ensure messages are loaded
-        .order_by(Conversation.updated_at.desc()) # Show most recently updated first
+        .options(selectinload(Conversation.messages))
+        .order_by(Conversation.updated_at.desc())
     )
     conversations = result.scalars().all()
 
     conversation_infos: List[ConversationInfo] = []
     for conv in conversations:
         first_message_content = None
-        if conv.messages: # Messages are ordered by created_at due to model definition
+        if conv.messages:
             first_message_content = conv.messages[0].content
-        
+
         conversation_infos.append(
             ConversationInfo(
                 id=conv.id,

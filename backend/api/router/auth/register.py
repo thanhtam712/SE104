@@ -40,7 +40,7 @@ router = APIRouter()
 
 @router.post(
     "/register",
-    response_model=UserInfoResponse,  # On success, return UserInfoResponse
+    response_model=UserInfoResponse, 
     status_code=status.HTTP_201_CREATED,
     summary="Register a new user",
     responses={
@@ -55,7 +55,6 @@ async def register_user(
     request_data: RegisterRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    # Check if username or email already exists
     stmt = select(User).where(
         (User.username == request_data.username)
         | (User.user_email == request_data.user_email)
@@ -85,10 +84,10 @@ async def register_user(
         "hashed_password": hashed_password,
         "user_fullname": request_data.user_fullname,
         "user_email": request_data.user_email,
-        "user_role": request_data.user_role,  # Use the string value, e.g., 'user'
+        "user_role": request_data.user_role,
     }
 
-    print(new_user_data)  # Debugging line to check the data being passed
+    print(new_user_data) 
 
     new_user = User(**new_user_data)
 
@@ -96,9 +95,8 @@ async def register_user(
         db.add(new_user)
         await db.commit()
         await db.refresh(new_user)
-    except IntegrityError:  # Should be caught by the check above, but as a safeguard
+    except IntegrityError: 
         await db.rollback()
-        # This case implies a race condition if the initial check passed.
         return respond_http(
             status_code=status.HTTP_409_CONFLICT,
             status="error",
@@ -106,7 +104,6 @@ async def register_user(
         )
     except Exception as e:
         await db.rollback()
-        # In a production app, log the error `e`
         print(f"Error during user registration: {e}")  # Basic logging
         return respond_http(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -114,7 +111,6 @@ async def register_user(
             message="An unexpected error occurred during registration.",
         )
 
-    # return UserInfoResponse.from_orm(new_user)
     return respond_http(
         status_code=status.HTTP_201_CREATED,
         status="success",
