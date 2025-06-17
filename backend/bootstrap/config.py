@@ -17,6 +17,11 @@ class Config(BaseSettings):
     POSTGRES_PORT: int = 5432
     DATABASE_URL: Optional[str] = None  # Will be constructed if not provided
 
+    # Qdrant settings
+    QDRANT_HOST: str = "localhost"
+    QDRANT_PORT: int = 6333
+    QDRANT_API_KEY: Optional[str] = None # Add API key if Qdrant Cloud or secured instance
+
     # CORS settings
     BACKEND_CORS_ORIGINS: list[str] = [
         "http://localhost:3000",

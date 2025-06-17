@@ -60,7 +60,7 @@ export function SearchChatHistory() {
                     variant="ghost"
                     size="icon"
                     aria-label="Search chat history"
-                    className="focus:outline-none focus:ring-0 focus:ring-offset-0 p-4"
+                    className="focus:outline-none focus:ring-0 focus:ring-offset-0 p-4 cursor-pointer"
                 >
                     <Search className="h-32 w-32" />
                 </Button>

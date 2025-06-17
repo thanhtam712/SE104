@@ -4,9 +4,11 @@ import { useState, useRef, useEffect } from "react"
 import { useUserChat } from "@/hooks/userChat"
 import { getCookie, setCookie } from "cookies-next"
 import { useParams } from "next/navigation" // Import useParams
+import { Copy, Check } from "lucide-react" // Import icons for copy functionality
+import { toast } from "react-toastify" // For notification when copying
 
 interface Message {
-    sender: "user" | "assistant"
+    sender: "user" | "bot"
     text: string
 }
 
@@ -18,6 +20,7 @@ export function Conversation({ isSidebarCollapsed }: ConversationProps) {
     const [messages, setMessages] = useState<Message[]>([])
     const [input, setInput] = useState("")
     const [isTyping, setIsTyping] = useState(false)
+    const [copiedMessageIndex, setCopiedMessageIndex] = useState<number | null>(null)
     const messagesEndRef = useRef(null);
     const { createChat, conversation } = useUserChat() // Removed getListConversations as it's not used here
     const params = useParams(); // Get URL parameters
@@ -27,6 +30,37 @@ export function Conversation({ isSidebarCollapsed }: ConversationProps) {
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
     }, [messages])
+
+    // Reset copied state after a delay
+    useEffect(() => {
+        if (copiedMessageIndex !== null) {
+            const timer = setTimeout(() => {
+                setCopiedMessageIndex(null);
+            }, 2000);
+            
+            return () => clearTimeout(timer);
+        }
+    }, [copiedMessageIndex]);
+
+    // Handle copying a message
+    const handleCopyMessage = (text: string, index: number) => {
+        navigator.clipboard.writeText(text)
+            .then(() => {
+                setCopiedMessageIndex(index);
+                toast.success("Message copied to clipboard", {
+                    position: "bottom-right",
+                    autoClose: 2000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                });
+            })
+            .catch((error) => {
+                console.error("Failed to copy message:", error);
+                toast.error("Failed to copy message");
+            });
+    };
 
     useEffect(() => {
         const loadMessages = async () => {
@@ -62,41 +96,47 @@ export function Conversation({ isSidebarCollapsed }: ConversationProps) {
     const handleSendMessage = async () => {
         if (input.trim() === "") return
 
-        // Use currentConversationId from URL for the API call
-        let response;
-        if (currentConversationId === "new") {
-            response = await createChat({
-                message: input.trim(),
-            })
-        } else {
-
-            response = await createChat({
-                message: input.trim(),
-                conversation_id: currentConversationId,
-            })
-        }
-
-        // If it was a new chat (no currentConversationId), 
-        // the createChat hook should have updated the ConversationID state,
-        // which in turn should trigger navigation via its own useEffect.
-        // For existing chats, the ID remains the same.
-
-        setIsTyping(true); // Consider setting this false after bot responds
-
-        const userMessage: Message = { sender: "user", text: input }
         // Add user message immediately for responsiveness
+        const userMessage: Message = { sender: "user", text: input.trim() }
         setMessages((prev) => [...prev, userMessage]);
 
-        // Simulate bot response for now, actual bot response should come from createChat's response
-        // and be handled perhaps by adding to messages state from there or a websocket
-        const assistantMessage: Message = {
-            sender: "assistant",
-            // text: `You said: "${input}"`, // This should be response.bot_message
-            text: response.bot_message,
-        }
-        setMessages((prev) => [...prev, assistantMessage])
+        // Show the typing indicator
+        setIsTyping(true);
 
-        setInput("")
+        try {
+            // Use currentConversationId from URL for the API call
+            let response;
+            if (currentConversationId === "new") {
+                response = await createChat({
+                    message: input.trim(),
+                    conversation_id: null,
+                });
+            } else {
+                response = await createChat({
+                    message: input.trim(),
+                    conversation_id: currentConversationId,
+                });
+            }
+
+            // Add the assistant's response once received
+            const assistantMessage: Message = {
+                sender: "assistant",
+                text: response.bot_message,
+            };
+            setMessages((prev) => [...prev, assistantMessage]);
+        } catch (error) {
+            console.error("Error sending message:", error);
+            // Add an error message if the request fails
+            const errorMessage: Message = {
+                sender: "assistant",
+                text: "Sorry, I couldn't process your request. Please try again later.",
+            };
+            setMessages((prev) => [...prev, errorMessage]);
+        } finally {
+            // Hide the typing indicator once we have a response (or an error)
+            setIsTyping(false);
+            setInput("");
+        }
     }
 
     const handleKeyDown = (e) => {
@@ -106,7 +146,7 @@ export function Conversation({ isSidebarCollapsed }: ConversationProps) {
         }
     }
 
-    const containerClass = isTyping ? 'flex-1 flex justify-center bg-white transition-all duration-300 mb-5 overflow-hidden' : 'flex-1 flex justify-center items-center bg-white transition-all duration-300 overflow-hidden';
+    const containerClass = 'flex-1 flex justify-center items-center bg-white transition-all duration-300 overflow-hidden'
 
     return (
         <div
@@ -115,13 +155,13 @@ export function Conversation({ isSidebarCollapsed }: ConversationProps) {
         >
             {/* Title Area */}
             <div className="p-4 bg-white">
-                <h2 className="text-xl font-semibold">Chatbot - Hệ thống tư vấn tuyển sinh thử nghiệm</h2>
+                <h2 className="text-xl font-semibold">Chatbot - Hệ Thống Tư Vấn</h2>
             </div>
 
             {/* Chat Area */}
             <div className={containerClass}>
                 <div
-                    className={`flex flex-col w-3/5 h-[95%] max-h-screen transition-all duration-300 ${isSidebarCollapsed ? "-ml-36" : "mx-auto"
+                    className={`flex flex-col w-3/5 max-h-screen h-[98%] transition-all duration-300 ${isSidebarCollapsed ? "-ml-36" : "mx-auto"
                         }`}
                 >
                     {/* Chat History */}
@@ -130,19 +170,50 @@ export function Conversation({ isSidebarCollapsed }: ConversationProps) {
                             {messages.map((message, index) => (
                                 <div
                                     key={index}
-                                    className={`mb-2 ${message.sender === "user" ? "text-right" : "text-left"
+                                    className={`mb-4 flex flex-col ${message.sender === "user" ? "items-end" : "items-start" // Flex column and alignment
                                         }`}
                                 >
+                                    {/* Message Bubble */}
                                     <div
-                                        className={`inline-block px-4 py-2 rounded-lg ${message.sender === "user"
+                                        className={`inline-block px-4 py-2 rounded-lg max-w-[80%] ${message.sender === "user"
                                             ? "bg-gray-100 text-black"
-                                            : "text-black bg-white"
+                                            : "text-black bg-white border border-gray-200"
                                             }`}
                                     >
                                         {message.text}
                                     </div>
+
+                                    {/* Copy button - below the message for assistant messages */}
+                                    {message.sender === "bot" && (
+                                        <button
+                                            onClick={() => handleCopyMessage(message.text, index)}
+                                            className="mt-1 p-1 rounded-md transition-opacity bg-white border border-gray-200 hover:bg-gray-100 flex items-center text-xs text-gray-500" // Adjusted classes
+                                            title="Copy message"
+                                        >
+                                            {copiedMessageIndex === index ? (
+                                                <Check className="h-3 w-3 mr-1 text-green-500" />
+                                            ) : (
+                                                <Copy className="h-3 w-3 mr-1 text-gray-500" />
+                                            )}
+                                            {copiedMessageIndex === index ? "Copied" : "Copy"}
+                                        </button>
+                                    )}
                                 </div>
                             ))}
+
+                            {/* AI Typing Indicator */}
+                            {isTyping && (
+                                <div className="mb-2 text-left">
+                                    <div className="inline-block px-4 py-2 rounded-lg text-black bg-white">
+                                        <div className="flex space-x-2">
+                                            <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                                            <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                                            <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '600ms' }}></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
                             <div ref={messagesEndRef} />
                         </div>
                     </div>
@@ -157,12 +228,14 @@ export function Conversation({ isSidebarCollapsed }: ConversationProps) {
                                 onChange={(e) => setInput(e.target.value)}
                                 onKeyDown={handleKeyDown}
                                 placeholder="Type your message..."
+                                disabled={isTyping} // Disable input while AI is responding
                             />
                             <button
-                                className="px-4 py-2 bg-gray-900 text-white rounded-md cursor-pointer hover:bg-black"
+                                className={`px-4 py-2 text-white rounded-md cursor-pointer ${isTyping ? 'bg-gray-500' : 'bg-gray-900 hover:bg-black'}`}
                                 onClick={handleSendMessage}
+                                disabled={isTyping} // Disable button while AI is responding
                             >
-                                Send
+                                {isTyping ? 'Thinking...' : 'Send'}
                             </button>
                         </div>
                     </div>

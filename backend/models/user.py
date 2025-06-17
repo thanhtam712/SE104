@@ -31,11 +31,11 @@ class User(Base):
         DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
     )
 
+    conversations = relationship(
+        "Conversation", back_populates="user", foreign_keys="Conversation.user_id", cascade="all, delete-orphan"
+    )
     sessions = relationship(
         "Session", back_populates="user", cascade="all, delete-orphan"
-    )
-    conversations = relationship(
-        "Conversation", back_populates="user", cascade="all, delete-orphan"
     )
 
     def __repr__(self):

@@ -1,5 +1,4 @@
 load_dotenv
-openai<1
 fastapi
 uvicorn
 python-jose
@@ -9,3 +8,17 @@ pydantic_settings
 asyncpg
 pydantic[email]
 python-multipart
+python-magic
+sqlalchemy-data-model-visualizer
+qdrant-client
+PyPDF2
+python-magic
+natsort
+opencv-python
+requests
+pdf2image
+rich
+python-docx==1.1.2
+scikit-learn
+scipy
+openai<1

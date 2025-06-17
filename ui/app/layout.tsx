@@ -9,7 +9,16 @@ import { Endpoints } from "@/endpoints";
 import { getCookie } from "cookies-next";
 import { useRouter } from "next/navigation";
 import 'react-toastify/dist/ReactToastify.css';
+import { Playfair_Display } from 'next/font/google';
+import { GeistSans } from 'geist/font/sans';
+import { GeistMono } from 'geist/font/mono';
 
+const playfair = Playfair_Display({
+  subsets: ['latin'],
+  variable: '--font-playfair',
+  display: 'swap',
+  weight: ['400', '500', '600', '700']
+});
 
 export default function RootLayout({
   children,
@@ -17,8 +26,11 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   const router = useRouter();
+  const pathname = typeof window !== "undefined" ? window.location.pathname : "";
 
   useEffect(() => {
+    // Skip session check for public routes
+    if (pathname === "/auth/login" || pathname === "/auth/signup") return;
     (async () => {
       const refreshToken = getCookie("refresh_token");
       const response = await fetch(Endpoints.me, {
@@ -42,7 +54,7 @@ export default function RootLayout({
         return;
       }
     })();
-  }, []);
+  }, [pathname]);
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -51,7 +63,6 @@ export default function RootLayout({
         <meta name="description" content="Chat application" />
         <link rel="icon" href="/favicon.ico" />
         <title>Chat Application</title>
-        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" />
       </head>
 
       <body>

@@ -3,7 +3,10 @@
 import {
     LayoutDashboardIcon,
     UserIcon,
-    SettingsIcon
+    SettingsIcon,
+    UsersIcon,
+    HomeIcon,
+    FolderKanban
 } from "lucide-react"
 import * as React from "react"
 
@@ -35,6 +38,11 @@ const data = {
             title: "Users", // Changed from "User" to "Users" for clarity
             url: "/admin/user", // Updated to link to the user management page
             icon: UserIcon,
+        },
+        {
+            title: "Collections", // Added Collections
+            url: "/admin/collection", // Updated to link to the collections page
+            icon: FolderKanban,
         },
         {
             title: "Settings",

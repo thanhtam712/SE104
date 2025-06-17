@@ -12,11 +12,17 @@ import {
 import { SidebarIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import * as React from "react"
+import { toast } from "react-toastify"
+import { useState, useEffect } from "react"
 import { useUserChat } from "@/hooks/userChat"
 import { Conversation } from "@/types"
+import { authApi } from "@/api/auth"
+import { getCookie } from "cookies-next"
+import { InUser } from "@/types"
 
 import { CreateNewChat } from "@/components/ChatScreen/create-new-chat"
 import { SearchChatHistory } from "@/components/ChatScreen/search-chat-history"
+import { useRouter } from "next/navigation"
 
 interface AppSidebarProps {
     setIsSidebarCollapsed: (isCollapsed: boolean) => void
@@ -29,29 +35,89 @@ export function AppSidebar({ setIsSidebarCollapsed, isSidebarCollapsed, ...props
     }
     // Fetch chat history from backend
     const { listConversations } = useUserChat();
-    const [chats, setChats] = React.useState<Conversation[]>([]);
-    const [loading, setLoading] = React.useState(true);
+    const [refresh_token, setRefreshToken] = useState("")
+    const [user, setUser] = useState<InUser | null>(null);
+    const [chats, setChats] = useState<Conversation[]>([]);
+    const [loading, setLoading] = useState(true);
+    const router = useRouter();
 
-    React.useEffect(() => {
-        const fetchChats = async () => {
-            setLoading(true);
-            try {
-                const res = await listConversations();
-                setChats(res.conversations || []);
-            } catch (e) {
-                setChats([]);
-            }
-            setLoading(false);
-        };
+    const fetchChats = async () => {
+        setLoading(true);
+        try {
+            const res = await listConversations();
+            setChats(res.conversations || []);
+        } catch (e) {
+            setChats([]);
+        }
+        setLoading(false);
+    };
+
+    useEffect(() => {
         fetchChats();
     }, [listConversations]);
 
     // You can keep the user info static or fetch from context if needed
-    const user = {
-        name: "ttam",
-        email: "ttam712@gmail.com",
-        avatar: "/avatars/shadcn.jpg",
-    };
+    // useEffect(() => {
+    //     const fetchUser = async () => {
+    //         const refresh_token = getCookie("refresh_token");
+
+    //         if (!refresh_token) {
+    //             console.error("No refresh token found in avt");
+    //             return;
+    //         }
+
+    //         setRefreshToken(refresh_token.toString());
+    //         const userInfo: InUser = await authApi.me(refresh_token.toString());
+    //         if (!userInfo) {
+    //             console.error("No user info found");
+    //             return;
+    //         }
+    //         setUser(userInfo);
+    //     }
+    //     fetchUser();
+    // }, [])
+
+    // const dataUser = {
+    //     name: user?.name,
+    //     email: user?.email,
+    //     avatar: "./chatbot_admission_logo.png",
+    // }
+    useEffect(() => {
+        const fetchUser = async () => {
+            const refresh_token = getCookie("refresh_token");
+            if (!refresh_token) {
+                return;
+            }
+
+            setRefreshToken(refresh_token.toString());
+            try {
+                const userInfo: InUser = await authApi.me(refresh_token.toString());
+                if (userInfo) {
+                    setUser(userInfo);
+                } else {
+                    toast.error("No user info found");
+                    setUser(null); // Ensure user is null in case of failure
+                }
+            } catch (error) {
+                toast.error("Error fetching user info");
+                setUser(null); // Handle API error
+            }
+        }
+        fetchUser();
+    }, [])
+
+    // Create dataUser only when user data is available
+    const dataUser = user
+        ? {
+            name: user.name,
+            email: user.email,
+            avatar: "./chatbot_admission_logo.png",
+        }
+        : {
+            name: "Loading...", // Or some default/loading state
+            email: "",
+            avatar: "./chatbot_admission_logo.png",
+        };
 
     return (
         <Sidebar
@@ -74,7 +140,7 @@ export function AppSidebar({ setIsSidebarCollapsed, isSidebarCollapsed, ...props
                                 onClick={toggleSidebar}
                                 size="icon"
                                 aria-label="Toggle Sidebar"
-                                className="focus:outline-none focus:ring-0 focus:ring-offset-0"
+                                className="focus:outline-none focus:ring-0 focus:ring-offset-0 cursor-pointer"
                             >
                                 <SidebarIcon className="h-5 w-5" />
                             </Button>
@@ -90,7 +156,7 @@ export function AppSidebar({ setIsSidebarCollapsed, isSidebarCollapsed, ...props
                                 onClick={toggleSidebar}
                                 size="icon"
                                 aria-label="Toggle Sidebar"
-                                className="focus:outline-none focus:ring-0 focus:ring-offset-0"
+                                className="focus:outline-none focus:ring-0 focus:ring-offset-0 cursor-pointer"
                             >
                                 <SidebarIcon className="h-5 w-5" />
                             </Button>
@@ -99,30 +165,19 @@ export function AppSidebar({ setIsSidebarCollapsed, isSidebarCollapsed, ...props
                 )}
             </div>
 
-            {/* Chat History */}
-            <SidebarContent className="p-4">
-                <SidebarGroup>
-                    <SidebarGroupLabel
-                        className={`text-sm font-medium text-gray-600 ${isSidebarCollapsed ? "hidden" : ""
-                            }`}
-                    >
-                        History
-                    </SidebarGroupLabel>
-                    <SidebarContent className={`mt-2 ${isSidebarCollapsed ? "hidden" : ""}`}>
-                        {/* Pass fetched chats to NavChatHistory */}
-                        <NavChatHistory items={chats.map(chat => ({
-                            name: chat.title || "Untitled Chat",
-                            url: `${chat.id}`,
-                        }))} />
-                    </SidebarContent>
-                </SidebarGroup>
+            <SidebarContent className="flex-1 overflow-y-auto">
+                <NavChatHistory
+                    items={chats.map(chat => ({ id: chat.id, name: chat.title, url: chat.id }))}
+                    onConversationRenamed={fetchChats} // Pass fetchChats as callback
+                    onConversationDeleted={fetchChats} // Pass fetchChats as callback for deletion as well
+                />
             </SidebarContent>
 
             {/* Footer */}
             <SidebarFooter
                 className={`p-4 border-t border-gray-200 ${isSidebarCollapsed ? "hidden" : ""}`}
             >
-                <NavUser user={user} />
+                <NavUser user={dataUser} />
             </SidebarFooter>
 
             {/* Sidebar Rail */}

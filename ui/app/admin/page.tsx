@@ -52,14 +52,14 @@ export default function PageAdmin() {
                         {/* <div className="px-4 lg:px-6">
                             <ChartAreaInteractive />
                         </div> */}
-                        <div className="px-4 lg:px-6">
+                        {/* <div className="px-4 lg:px-6">
                             <h2 className="text-xl font-semibold mb-4">Recent Conversations</h2>
                             {loadingStats ? (
                                 <p>Loading recent conversations...</p>
                             ) : (
                                 <DataTable data={recentConversations} dataType="recentConversations" />
                             )}
-                        </div>
+                        </div> */}
                     </div>
                 </div>
             </div>

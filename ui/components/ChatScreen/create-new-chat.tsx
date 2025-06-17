@@ -36,7 +36,7 @@ export function CreateNewChat() {
                     variant="ghost"
                     size="icon"
                     aria-label="Create new chat"
-                    className="focus:outline-none focus:ring-0 focus:ring-offset-0 p-4"
+                    className="focus:outline-none focus:ring-0 focus:ring-offset-0 p-4 cursor-pointer"
                 >
                     <Edit className="h-32 w-32" />
                 </Button>

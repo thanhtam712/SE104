@@ -46,10 +46,6 @@ export const getConversation = async (values: InConversationGETRequest, token: s
         },
     });
 
-    if (!response.ok) {
-        throw new Error("Failed to fetch chat content");
-    }
-
     const data: InConversationGETResponse = await response.json();
     return data;
 }

@@ -4,6 +4,7 @@ import { useState, useEffect, useContext, createContext, ReactNode } from "react
 import { usePathname, useRouter } from "next/navigation";
 import { authApi } from "@/api/auth";
 import { getCookie, setCookie } from "cookies-next";
+import { toast } from "react-toastify";
 
 
 interface AuthContextType {
@@ -36,6 +37,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     const redirect = encodeURIComponent(pathname);
 
     useEffect(() => {
+        // Skip session verification for public routes
+        if (pathname === "/auth/login" || pathname === "/auth/signup") {
+            setLoading(false);
+            return;
+        }
+
         const verifySession = async () => {
             try {
                 const token = getCookie("access_token");
@@ -58,6 +65,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                 setRefreshToken("");
                 setIsAuthenticated(false);
                 setIsLoggedout(true);
+                
+                toast.error("Session expired. Please log in again.");
+                router.push(`/auth/login?redirect=${redirect}`);
             } finally {
                 setLoading(false);
             }
@@ -73,7 +83,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }, [router, pathname]);
 
     useEffect(() => {
-        if (isLoggedout && pathname !== "/auth/login") {
+        if (isLoggedout && pathname !== "/auth/login" && pathname !== "/auth/signup") {
             router.push(`/auth/login?redirect=${redirect}`);
             setIsLoggedout(false);
         }

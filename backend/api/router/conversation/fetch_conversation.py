@@ -52,9 +52,9 @@ async def fetch_conversation_messages(
     conversation = result.scalars().first()
 
     if not conversation:
-        return await respond_http(
+        return respond_http(
             status_code=status.HTTP_404_NOT_FOUND,
-            message_code="CONVERSATION_NOT_FOUND",
+            status="error",
             message="Conversation not found or access denied.",
         )
 

@@ -3,11 +3,13 @@ from api.router import (
     list_conversations_router,
     list_users_router,
     fetch_conversation_router,
+    manage_conversation_router,
     login_router,
     me_router,
     register_router,
     manage_user_router,
     admin_router,
+    collection_manager_router,
 )
 from bootstrap.db import init_db
 from fastapi import FastAPI
@@ -43,12 +45,18 @@ def create_app() -> FastAPI:
     app.include_router(
         fetch_conversation_router, prefix="/api/conversation", tags=["conversation"]
     )
+    app.include_router(
+        manage_conversation_router, prefix="/api/conversation", tags=["conversation"]
+    )
 
     app.include_router(list_users_router, prefix="/api/user", tags=["user"])
     app.include_router(manage_user_router, prefix="/api/user", tags=["user"])
+    app.include_router(admin_router, prefix="/api/admin", tags=["admin"])
+
+    # Collection Management
     app.include_router(
-        admin_router, prefix="/api/admin", tags=["admin"]
-    ) 
+        collection_manager_router, prefix="/api/collection", tags=["collection"]
+    )
 
     @app.on_event("startup")
     async def on_startup():

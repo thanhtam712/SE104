@@ -52,8 +52,9 @@ export const UserChatProvider = ({ children }: AuthProviderProps) => {
         verifySession();
     }, []);
 
+    // Modified redirection logic - don't redirect if we're on /chat/new
     useEffect(() => {
-        if (ConversationID && pathname !== `/chat/${ConversationID}`) {
+        if (ConversationID && pathname !== `/chat/${ConversationID}` && pathname !== "/chat/new") {
             router.push(`/chat/${ConversationID}`);
         }
     }, [ConversationID, pathname, router]);
@@ -62,15 +63,16 @@ export const UserChatProvider = ({ children }: AuthProviderProps) => {
     const createChat = async (values: InCreateChatPOSTRequest): Promise<InCreateChatPOSTResponse> => {
         const response: InCreateChatPOSTResponse = await userChatApi.postCreateChat(values, refreshToken.toString());
 
-        if (!ConversationID) {
-            setConversationID(response.conversation_id);
-            setCookie("conversation_id", response.conversation_id, { maxAge: 60 * 60 * 24 * 30, path: "/" });
-        }
-
         if (!response) {
             throw new Error("Failed to store chat data");
         }
-        setConversationID(response.conversation_id);
+        
+        // Only update conversation ID if we're not on the /chat/new path
+        // This prevents redirection when creating a new chat
+        if (pathname !== "/chat/new") {
+            setConversationID(response.conversation_id);
+            setCookie("conversation_id", response.conversation_id, { maxAge: 60 * 60 * 24 * 30, path: "/" });
+        }
 
         return response;
     };
